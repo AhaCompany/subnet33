@@ -285,8 +285,23 @@ class llm_openai:
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
-            prompt = prompt1 + "\n\n\n"
+            prompt_base = '''Analyze the following conversation carefully and generate optimal semantic tags that will score highest with validators.
+
+CRITICAL SCORING GUIDELINES:
+1. Create EXACTLY 7 high-scoring tags that will maximize validator scores
+2. Focus on creating 3-4 CORE tags that directly match the most obvious themes (these will match validator ground truth)
+3. Include 2-3 UNIQUE but relevant tags with high semantic meaning (these increase uniqueness score)
+4. Tags MUST be 3-64 characters and use proper English keywords
+5. Tags should represent specific entities, emotions, relationships, and key topics 
+6. AVOID generic terms like "conversation", "discussion", "communication", "talking", "dialogue"
+7. Each tag should have high vector similarity to the conversation's semantic neighborhood
+8. Include at least 1-2 proper nouns or named entities when present in conversation
+9. CRITICAL: Ensure top 3 tags have maximum semantic relevance as they account for 55% of final score
+
+The conversation is in XML format where <p0> and <p1> are participants.
+Return only comma-delimited tags without any explanations or commentary.
+'''
+            prompt = prompt_base + "\n\n\n"
             if convoXmlStr:
                 prompt += convoXmlStr
             else:

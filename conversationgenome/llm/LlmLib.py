@@ -52,14 +52,26 @@ class LlmLib:
 
         return out
 
-    async def conversation_to_metadata(self,  conversation, generateEmbeddings=False):
-        if not self.factory_llm:
-            self.factory_llm = await self.generate_llm_instance()
+    async def conversation_to_metadata(self, conversation, generateEmbeddings=False, llm_type_override=None):
+        if not self.factory_llm or llm_type_override:
+            # If we have a specific override, use that for this particular call
+            self.factory_llm = await self.generate_llm_instance(llm_type_override=llm_type_override)
             if not self.factory_llm:
                 bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
                 return
 
+        # Track which LLM is used for debugging and optimization
+        llm_type = llm_type_override or c.get("env", "LLM_TYPE_OVERRIDE", "openai")
+        if self.verbose:
+            bt.logging.info(f"Using LLM type: {llm_type}")
+            
+        # Process conversation with the selected LLM
         response = await self.factory_llm.conversation_to_metadata(conversation, generateEmbeddings=generateEmbeddings)
+        
+        # Add metadata about which LLM was used
+        if response and isinstance(response, dict):
+            response['llm_type'] = llm_type
+            
         return response
 
     async def get_vector_embeddings_set(self, tags):

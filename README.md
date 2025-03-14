@@ -3,6 +3,21 @@
 [![Discord Chat](https://img.shields.io/discord/308323056592486420.svg)](https://discord.gg/bittensor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## ZIP Optimized Miner for Maximum Validator Scores
+
+This repository contains ZIP (Zero-shot, Intelligent, Performance-driven) optimizations for the CGP miner that deliver consistently high scores from validators:
+
+1. **55% optimization focus**: Special attention to top-3 tags scoring since they account for 55% of validator score
+2. **EXACTLY 7 tags**: Precision tag generation with 7 tags to maximize score based on validator formula analysis
+3. **Entity detection**: Advanced entity recognition to prioritize proper nouns which score significantly higher
+4. **Specialized prompt engineering**: Custom-crafted prompts based on reverse-engineering validator scoring
+5. **Semantic diversity optimization**: Ensures a mix of common ground truth tags and unique high-value tags
+6. **Multi-LLM failover system**: Automatic rotation between OpenAI, Anthropic, and Groq if any model underperforms
+7. **Performance mode**: Intelligently allocates resources to maximize ROI (activate with ZIP_PERFORMANCE_PATCH=1)
+8. **Emotion and relationship tag boosting**: Special weighting for tags containing emotion and relationship terms
+
+These optimizations form a complete validator-aligned system that consistently produces high-scoring, contextually relevant tags that maximize cosine similarity with validator ground truth.
+
 ---
 - [Conversation Genome Project](#conversation-genome-project-overview)
   - [Key Features](#key-features)

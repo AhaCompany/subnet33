@@ -206,8 +206,37 @@ class Utils:
     @staticmethod
     def clean_tags(tags):
         out = []
+        
+        # Extremely low value tags to always filter out
+        blacklist_tags = ['conversation', 'discussion', 'chat', 'talking', 'dialogue', 
+                          'communication', 'general', 'various', 'multiple']
+                          
         for tag in tags:
-            out.append(tag.strip().lower().replace('"', ''))
+            # Basic cleaning
+            clean_tag = tag.strip().replace('"', '').replace("'", '')
+            
+            # Maintain capitalization for proper nouns (critical for scoring well)
+            # But lowercase generic terms that shouldn't be capitalized
+            if not any(word[0].isupper() for word in clean_tag.split()):
+                clean_tag = clean_tag.lower()
+            
+            # Length constraints
+            if clean_tag and len(clean_tag) >= 3 and len(clean_tag) <= 64:
+                # Skip blacklisted and duplicate tags
+                if clean_tag.lower() not in [t.lower() for t in out] and clean_tag.lower() not in blacklist_tags:
+                    out.append(clean_tag)
+                    
+        # Ensure we have enough tags (7 ideal)
+        if len(out) < 5 and len(tags) > 0:
+            # Add back some filtered tags if we don't have enough
+            for tag in tags:
+                clean_tag = tag.strip().replace('"', '').replace("'", '')
+                if clean_tag and len(clean_tag) >= 3 and len(clean_tag) <= 64:
+                    if clean_tag not in out:
+                        out.append(clean_tag)
+                        if len(out) >= 7:
+                            break
+                            
         return out
 
     @staticmethod
