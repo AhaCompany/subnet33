@@ -78,7 +78,14 @@ class MinerLib:
                 try:
                     # Generate metadata with current LLM provider
                     llml = LlmLib()
-                    lines = copy.deepcopy(conversation_window)
+                    # Fix: Handle potentially nested lists in conversation_window
+                    lines = []
+                    for item in conversation_window:
+                        if isinstance(item, list):
+                            # Flatten nested list
+                            lines.extend([str(subitem) for subitem in item])
+                        else:
+                            lines.append(str(item))
                     
                     # Enable embeddings strategically based on performance mode
                     # In performance mode, we save API costs by only generating embeddings
@@ -88,7 +95,7 @@ class MinerLib:
                     # In performance mode, only generate embeddings for larger windows
                     # This significantly improves success rate while reducing costs
                     if self._performance_mode:
-                        convo_complexity = len(''.join(conversation_window))
+                        convo_complexity = len(''.join(lines))
                         if convo_complexity < 500:  # Short, simple conversations
                             generateEmbeddings = False
                             bt.logging.info(f"Performance mode: Skipping embeddings for simple conversation")
@@ -336,8 +343,17 @@ class MinerLib:
         """Generate fallback tags when LLM fails"""
         fallback_tags = []
         
+        # Fix: Handle potentially nested lists in conversation_window
+        flat_convo = []
+        for item in conversation_window:
+            if isinstance(item, list):
+                # Flatten nested list
+                flat_convo.extend([str(subitem) for subitem in item])
+            else:
+                flat_convo.append(str(item))
+                
         # Extract potential keywords from conversation
-        all_text = " ".join(conversation_window)
+        all_text = " ".join(flat_convo)
         
         # Find capitalized terms (potential proper nouns/entities)
         import re
