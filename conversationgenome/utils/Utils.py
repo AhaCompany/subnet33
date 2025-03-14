@@ -262,14 +262,23 @@ class Utils:
 
     @staticmethod
     def generate_convo_xml(convo):
-        xml = "<conversation id='%d'>" % (83945)
+        xml = "<conversation id='83945'>"  # Fixed string conversion issue
         #print("CONVO OPENAI", convo)
         participants = {}
         for line in convo['lines']:
             if len(line) != 2:
                 continue
-            participant = "p%d" % (line[0])
-            xml += "<%s>%s</%s>" % (participant, line[1], participant)
+            
+            # Fix: Ensure line[0] is converted to int safely
+            try:
+                participant_id = int(line[0]) if isinstance(line[0], str) else line[0]
+                participant = f"p{participant_id}"  # Use f-string instead of %d format
+            except (ValueError, TypeError):
+                # Default to p0 if conversion fails
+                participant = "p0"
+                
+            xml += f"<{participant}>{line[1]}</{participant}>"  # Use f-string for safer formatting
+            
             if not participant in participants:
                 participants[participant] = 0
             # Count number entries for each participant -- may need it later
