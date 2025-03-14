@@ -12,7 +12,7 @@ This repository contains ZIP (Zero-shot, Intelligent, Performance-driven) optimi
 3. **Entity detection**: Advanced entity recognition to prioritize proper nouns which score significantly higher
 4. **Specialized prompt engineering**: Custom-crafted prompts based on reverse-engineering validator scoring
 5. **Semantic diversity optimization**: Ensures a mix of common ground truth tags and unique high-value tags
-6. **Multi-LLM failover system**: Automatic rotation between OpenAI, Anthropic, and Groq if any model underperforms
+6. **Optimized OpenAI integration**: Specialized for GPT-4o with custom prompt engineering and retry mechanisms
 7. **Performance mode**: Intelligently allocates resources to maximize ROI (activate with ZIP_PERFORMANCE_PATCH=1)
 8. **Emotion and relationship tag boosting**: Special weighting for tags containing emotion and relationship terms
 

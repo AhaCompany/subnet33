@@ -49,7 +49,7 @@ class MinerLib:
     _result_cache = {}
     _cache_size = 100  # Limit cache size to avoid memory issues
     _retry_attempts = 3
-    _llm_providers = ['openai', 'anthropic', 'groq']
+    _llm_providers = ['openai']  # Only use OpenAI as requested
     _current_llm_idx = 0
     
     # Check for ZIP_PERFORMANCE_PATCH flag in environment
@@ -104,16 +104,12 @@ class MinerLib:
                     else:
                         bt.logging.info(f"Miner: generating embeddings...")
                     
-                    # Try with different LLM providers if previous attempts failed
+                    # Always use OpenAI, just retry the same provider with no rotation
                     if attempt > 0:
-                        # Rotate through LLM providers
-                        self._current_llm_idx = (self._current_llm_idx + 1) % len(self._llm_providers)
-                        current_llm = self._llm_providers[self._current_llm_idx]
-                        bt.logging.info(f"Retry attempt {attempt} with LLM provider: {current_llm}")
-                        # Override LLM type for this attempt
-                        result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings, llm_type_override=current_llm)
-                    else:
-                        result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings)
+                        bt.logging.info(f"Retry attempt {attempt} with OpenAI")
+                    
+                    # Always use OpenAI without any overrides
+                    result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings)
                     
                     # Extract and optimize tags
                     tags = Utils.get(result, 'tags')
