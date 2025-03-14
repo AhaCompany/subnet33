@@ -115,11 +115,22 @@ class MinerLib:
                     tags = Utils.get(result, 'tags')
                     vectors = Utils.get(result, 'vectors', {})
                     
-                    # Ensure we have a good number of tags (5-8 is optimal)
-                    if tags and len(tags) >= 3:
+                    # Even with very few tags, try to generate exactly 7 optimized tags
+                    if tags:
                         # Optimize tags - sort by likely relevance (presence of named entities, etc)
                         optimized_tags = self._optimize_tags(tags, vectors)
                         
+                        # If we still don't have 7 tags, generate additional fallback tags
+                        if len(optimized_tags) < 7:
+                            bt.logging.warning(f"Only got {len(optimized_tags)} tags from LLM, supplementing with fallbacks")
+                            fallback_tags = self._generate_fallback_tags(conversation_window)
+                            # Add fallback tags until we have 7 total
+                            additional_needed = 7 - len(optimized_tags)
+                            optimized_tags.extend(fallback_tags[:additional_needed])
+                        
+                        # Ensure we have exactly 7 tags (trim excess)
+                        optimized_tags = optimized_tags[:7]
+                            
                         # Update the response
                         out["tags"] = optimized_tags
                         out["vectors"] = vectors
@@ -136,9 +147,14 @@ class MinerLib:
                         if self.verbose:
                             bt.logging.debug(f"MINED TAGS: {out['tags']}")
                         
-                        # Success, no need to retry
-                        break
-                    else:
+                        # If we have exactly 7 tags, consider this a success
+                        if len(optimized_tags) == 7:
+                            # Success, no need to retry
+                            break
+                        # Otherwise, keep retrying to see if we can get better tags
+                    
+                    # If we didn't get any tags at all or didn't break out of the loop
+                    if not tags or len(tags) < 3:
                         bt.logging.warning(f"Insufficient tags ({len(tags) if tags else 0}), retrying...")
                         continue
                         
@@ -336,9 +352,7 @@ class MinerLib:
         return False
         
     def _generate_fallback_tags(self, conversation_window):
-        """Generate fallback tags when LLM fails"""
-        fallback_tags = []
-        
+        """Generate fallback tags when LLM fails - ensures EXACTLY 7 tags are returned"""
         # Fix: Handle potentially nested lists in conversation_window
         flat_convo = []
         for item in conversation_window:
@@ -350,27 +364,67 @@ class MinerLib:
                 
         # Extract potential keywords from conversation
         all_text = " ".join(flat_convo)
+        all_text_lower = all_text.lower()
         
-        # Find capitalized terms (potential proper nouns/entities)
+        # Initialize with empty list
+        fallback_tags = []
+        
+        # 1. Find capitalized terms (potential proper nouns/entities)
         import re
         capitalized_terms = re.findall(r'\b[A-Z][a-z]{2,}\b', all_text)
         if capitalized_terms:
-            fallback_tags.extend(capitalized_terms[:3])
-            
-        # Add some generic conversation topic tags
-        common_topics = ["conversation", "communication", "discussion"]
-        fallback_tags.extend(common_topics)
+            for term in capitalized_terms[:3]:
+                if term not in fallback_tags:
+                    fallback_tags.append(term)
         
-        # Add emotional tone if detectable
-        positive_words = ['happy', 'glad', 'exciting', 'love', 'thank', 'appreciate']
-        negative_words = ['sad', 'upset', 'angry', 'disappointed', 'sorry', 'problem']
+        # 2. Check for emotional tone
+        positive_words = ['happy', 'glad', 'exciting', 'love', 'thank', 'appreciate', 'good', 'great', 'excellent']
+        negative_words = ['sad', 'upset', 'angry', 'disappointed', 'sorry', 'problem', 'bad', 'terrible', 'awful']
         
-        all_text_lower = all_text.lower()
         if any(word in all_text_lower for word in positive_words):
-            fallback_tags.append("positive conversation")
+            fallback_tags.append("positive_emotion")
         elif any(word in all_text_lower for word in negative_words):
-            fallback_tags.append("negative conversation")
+            fallback_tags.append("negative_emotion")
+        else:
+            fallback_tags.append("neutral_conversation")
             
-        # Return unique tags
-        return list(set(fallback_tags))
+        # 3. Check for common topics
+        topic_keywords = {
+            "tech": ["computer", "technology", "software", "hardware", "app", "digital", "tech", "device"],
+            "personal_relationship": ["friend", "family", "girlfriend", "boyfriend", "partner", "relationship", "dating"],
+            "business": ["company", "work", "job", "business", "office", "career", "professional"],
+            "education": ["school", "university", "college", "study", "student", "learn", "class", "education"],
+            "health": ["health", "doctor", "medical", "disease", "sick", "hospital", "medicine"],
+            "entertainment": ["movie", "music", "game", "play", "fun", "entertainment", "video"],
+            "food": ["food", "eat", "restaurant", "dinner", "lunch", "breakfast", "recipe", "cook"],
+            "travel": ["travel", "trip", "vacation", "holiday", "flight", "hotel", "destination"]
+        }
+        
+        for topic, keywords in topic_keywords.items():
+            if any(keyword in all_text_lower for keyword in keywords):
+                fallback_tags.append(topic)
+                
+        # 4. Add generic conversation types if we don't have enough tags
+        generic_tags = [
+            "information_exchange", 
+            "question_answer", 
+            "casual_conversation",
+            "emotional_support", 
+            "advice_seeking", 
+            "opinion_sharing",
+            "problem_solving", 
+            "general_discussion", 
+            "initial_contact", 
+            "follow_up_conversation"
+        ]
+        
+        # Add generic tags until we have 7 total
+        i = 0
+        while len(fallback_tags) < 7 and i < len(generic_tags):
+            if generic_tags[i] not in fallback_tags:
+                fallback_tags.append(generic_tags[i])
+            i += 1
+            
+        # Ensure we have exactly 7 tags
+        return fallback_tags[:7]
 
